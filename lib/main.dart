@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'produtoheader.dart';
+import 'produtoinfo.dart';
+import 'produtobotaocomprar.dart';
 
 //código desenvolvido pela Anna Beatriz Martins da Silva
 
