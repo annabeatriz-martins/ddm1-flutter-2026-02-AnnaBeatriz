@@ -23,7 +23,7 @@ class ProdutoHeader extends StatelessWidget {
                 size: 80,
                 color: Color(0xff00b3b0),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 14),
               Text(
                 '♪ VOCALOID Collector Series ♪',
                 style: TextStyle(

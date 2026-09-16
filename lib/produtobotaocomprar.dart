@@ -20,7 +20,7 @@ class ProdutoBotaoComprar extends StatelessWidget{
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Hatsune Miku Figure adicionada ao carrinho!'),
-                backgroundColor: Color(0xff00838f),
+                backgroundColor: Color(0xff00b3b0),
                 duration: Duration(seconds: 3),
               ),
             );

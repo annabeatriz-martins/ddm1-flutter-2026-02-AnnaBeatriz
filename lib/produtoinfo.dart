@@ -74,7 +74,7 @@ class ProdutoInfo extends StatelessWidget{
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
-                    color: Color(0xff00838f),
+                    color: Color(0xff00b3b0),
                   ),
                 ),
                 Text(
