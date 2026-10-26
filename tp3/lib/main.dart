@@ -98,6 +98,111 @@ class _TuristicoHomePageState extends State<TuristicoHomePage> {
         title: const Text('Turismo na Baixada Santista'),
         centerTitle: true,
       ),
+      body: ListView.builder(
+        itemCount: _pontosTuristicos.length,
+        itemBuilder: (context, index) {
+          final ponto = _pontosTuristicos[index];
+          return _buildCardPontoTuristico(ponto);
+        },
+      ),
+    );
+  }
+
+  Widget _buildCardPontoTuristico(PontoTuristico ponto) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              ponto.imagemUrl,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 180,
+                color: Colors.grey[300],
+                child: const Center(child: Icon(Icons.image_not_supported, size: 50)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            ponto.nome,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.red),
+              const SizedBox(width: 4),
+              Text(
+                'Cidade: ${ponto.cidade}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            ponto.descricao,
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+          const Divider(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Row(
+                children: [
+                  Checkbox(
+                    value: ponto.favorito,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        ponto.favorito = value ?? false;
+                      });
+                    },
+                  ),
+                  const Text('Favorito'),
+                ],
+              ),
+              Row(
+                children: [
+                  Checkbox(
+                    value: ponto.visitado,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        ponto.visitado = value ?? false;
+                      });
+                    },
+                  ),
+                  const Text('Visitado'),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
