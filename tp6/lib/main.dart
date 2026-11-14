@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MyApp());
@@ -32,6 +34,27 @@ class ReceitaPagPesquisa extends StatefulWidget{
 
 class _ReceitaPagPesquisaEstado extends State<ReceitaPagPesquisa>{
   final TextEditingController _controller = TextEditingController();
+  List<dynamic> _receitas = [];
+
+  Future<void> _pesquisaReceita(String query) async {
+    if (query.trim().isEmpty) return;
+
+    try {
+      final url = Uri.parse(
+          'https://www.themealdb.com/api/json/v1/1/search.php?s=${Uri.encodeComponent(query)}');
+      
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _receitas = data['meals'] ?? [];
+        });
+      }
+    } catch (e) {
+      debugPrint('Erro ao buscar receitas: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,13 +78,12 @@ class _ReceitaPagPesquisaEstado extends State<ReceitaPagPesquisa>{
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.search),
                     ),
+                    onSubmitted: (value) => _pesquisaReceita(value),
                   ),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: (){
-
-                  },
+                  onPressed: () => _pesquisaReceita(_controller.text),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
@@ -74,12 +96,21 @@ class _ReceitaPagPesquisaEstado extends State<ReceitaPagPesquisa>{
               ],
             ),
             const SizedBox(height: 20),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  "Digite um termo acima e clique em 'Buscar'.",
-                  style: TextStyle(fontSize: 16,color: Colors.black),
-                ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _receitas.length,
+                itemBuilder: (context, index) {
+                  final recipe = _receitas[index];
+                  return ListTile(
+                    leading: Image.network(
+                      recipe['strMealThumb'] ?? '',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    ),
+                    title: Text(recipe['strMeal'] ?? ''),
+                  );
+                },
               ),
             ),
           ],
