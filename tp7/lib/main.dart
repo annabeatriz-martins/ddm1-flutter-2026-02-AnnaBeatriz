@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MinhaEstanteApp());
@@ -16,6 +18,22 @@ class Livro {
     required this.autor,
     required this.status,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'titulo': titulo,
+      'autor': autor,
+      'status': status,
+    };
+  }
+
+  factory Livro.fromMap(Map<String, dynamic> map) {
+    return Livro(
+      titulo: map['titulo'] as String,
+      autor: map['autor'] as String,
+      status: map['status'] as String,
+    );
+  }
 }
 
 class MinhaEstanteApp extends StatelessWidget {
@@ -24,7 +42,7 @@ class MinhaEstanteApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Lista de Livros',
+      title: 'Lista de Livros - Anna Beatriz ',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: Colors.pink,
@@ -43,7 +61,53 @@ class TelaInicial extends StatefulWidget {
 }
 
 class _TelaInicialState extends State<TelaInicial> {
+  static const String _chaveLivros = 'livros_cadastrados';
   final List<Livro> _livros = [];
+  bool _carregando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarLivros();
+  }
+
+  Future<void> _carregarLivros() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_chaveLivros);
+
+    if (jsonString != null && jsonString.isNotEmpty) {
+      final List<dynamic> listaDecodificada = jsonDecode(jsonString);
+      final livrosSalvos = listaDecodificada
+          .map((item) => Livro.fromMap(Map<String, dynamic>.from(item)))
+          .toList();
+
+      setState(() {
+        _livros
+          ..clear()
+          ..addAll(livrosSalvos);
+        _carregando = false;
+      });
+    } else {
+      setState(() {
+        _carregando = false;
+      });
+    }
+  }
+
+  Future<void> _salvarLivrosNoDisco() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(_livros.map((livro) => livro.toMap()).toList());
+    await prefs.setString(_chaveLivros, jsonString);
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(mensagem)),
+      );
+  }
 
   Future<void> _abrirCadastro() async {
     final novoLivro = await Navigator.push<Livro>(
@@ -55,7 +119,18 @@ class _TelaInicialState extends State<TelaInicial> {
       setState(() {
         _livros.add(novoLivro);
       });
+      await _salvarLivrosNoDisco();
+      _mostrarMensagem('"${novoLivro.titulo}" adicionado à lista.');
     }
+  }
+
+  Future<void> _removerLivro(int index) async {
+    final livroRemovido = _livros[index];
+    setState(() {
+      _livros.removeAt(index);
+    });
+    await _salvarLivrosNoDisco();
+    _mostrarMensagem('"${livroRemovido.titulo}" removido da lista.');
   }
 
   @override
@@ -66,27 +141,43 @@ class _TelaInicialState extends State<TelaInicial> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Meus Livros - Anna Beatriz',
+              'Meus Livros',
               style: TextStyle(fontSize: 12),
             ),
           ],
         ),
       ),
-      body: _livros.isEmpty
-          ? const Center(
-              child: Text('Nenhum livro cadastrado. Toque em + para adicionar.'),
-            )
-          : ListView.builder(
-              itemCount: _livros.length,
-              itemBuilder: (context, index) {
-                final livro = _livros[index];
-                return ListTile(
-                  leading: const Icon(Icons.book),
-                  title: Text(livro.titulo),
-                  subtitle: Text('${livro.autor} • ${livro.status}'),
-                );
-              },
-            ),
+      body: _carregando
+          ? const Center(child: CircularProgressIndicator())
+          : _livros.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Nenhum livro cadastrado.\nToque em + para adicionar o primeiro.',
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: _livros.length,
+                  itemBuilder: (context, index) {
+                    final livro = _livros[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.book),
+                        title: Text(livro.titulo),
+                        subtitle: Text('${livro.autor} • ${livro.status}'),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: 'Remover livro',
+                          onPressed: () => _removerLivro(index),
+                        ),
+                      ),
+                    );
+                  },
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: _abrirCadastro,
         tooltip: 'Adicionar livro',
@@ -127,9 +218,13 @@ class _TelaCadastroLivroState extends State<TelaCadastroLivro> {
     final autor = _autorController.text.trim();
 
     if (titulo.isEmpty || autor.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha o título e o autor do livro.')),
-      );
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Por favor, informe o título e o autor.'),
+          ),
+        );
       return;
     }
 
@@ -169,6 +264,7 @@ class _TelaCadastroLivroState extends State<TelaCadastroLivro> {
                 border: OutlineInputBorder(),
               ),
               textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _salvarLivro(),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
